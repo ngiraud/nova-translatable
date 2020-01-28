@@ -14,7 +14,7 @@
         :key="locale.key"
         v-if="locale.key === activeLocale && value[locale.key]"
         :is="'detail-' + field.translatable.original_component"
-        :field="{ ...field, value: value[locale.key]}"
+        :field="{ ...field, value: getDetailFieldValueForObject(locale)}"
         :class="{ 'remove-bottom-border': removeBottomBorder() }"
         :resource-name="resourceName"
       ></component>
@@ -39,5 +39,14 @@ export default {
   components: { LocaleTabs },
   mixins: [TranslatableField],
   props: ['resourceName', 'resourceId', 'resource', 'field'],
+  methods: {
+    getDetailFieldValueForObject(locale) {
+      if(Object.keys(this.value[locale.key]).length <= 0) {
+        return ''
+      }
+
+      return this.value[locale.key]
+    }
+  }
 };
 </script>

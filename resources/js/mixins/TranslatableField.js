@@ -3,18 +3,12 @@ export default {
     value: {},
     activeLocale: void 0,
     originalFieldName: void 0,
-    fakeField: void 0,
   }),
 
-  mounted() {
+  created() {
     this.value = this.getInitialValue();
     this.originalFieldName = this.field.name;
     this.activeLocale = this.getActiveLocale();
-    this.fakeField = {
-      ...this.field,
-      value: this.value[this.activeLocale] || '',
-      attribute: `${this.field.attribute}.${this.activeLocale}`,
-    };
 
     // Listen to all locale event
     Nova.$on('nova-translatable@setAllLocale', this.setLocale);
@@ -42,6 +36,7 @@ export default {
       for (const locale of this.locales) {
         initialValue[locale.key] = this.formatValue(this.field.translatable.value[locale.key] || '');
       }
+
       return initialValue;
     },
 
@@ -55,22 +50,7 @@ export default {
       return localesFiltered[0].key;
     },
 
-    copyValueFromCurrentLocale() {
-      if (!this.fakeField.fill) return;
-
-      const formData = new FormData();
-      this.fakeField.fill(formData);
-      this.value[this.activeLocale] = formData.get(this.fakeField.attribute);
-    },
-
     setLocale(newLocale) {
-      // First read and copy the value from current input field
-      this.copyValueFromCurrentLocale();
-
-      // Set field value
-      this.fakeField.value = this.formatValue(this.value[newLocale] || '');
-      this.fakeField.attribute = `${this.field.attribute}.${newLocale}`;
-
       // Set new activeLocale
       this.activeLocale = newLocale;
     },
@@ -88,7 +68,7 @@ export default {
       let valueFormatted = value || ''
 
       if(this.fieldValueMustBeAnObject && !_.isObject(valueFormatted)) {
-        valueFormatted = JSON.parse(valueFormatted || '{}')
+        valueFormatted = valueFormatted === '' ? {} : JSON.parse(valueFormatted)
       }
 
       return valueFormatted

@@ -11,11 +11,12 @@
 
     <div v-for="locale in locales" :key="locale.key">
       <component
-        v-if="locale.key === activeLocale"
+        v-show="locale.key === activeLocale"
         :is="'form-' + field.translatable.original_component"
-        :field="fakeField"
+        :field="getComponentField(locale)"
         :resource-name="resourceName"
         :errors="errors"
+        :ref="`${locale.key}Component`"
         :class="{ 'remove-bottom-border': removeBottomBorder() }"
       ></component>
     </div>
@@ -31,30 +32,53 @@ export default {
   components: { LocaleTabs },
   mixins: [HandlesValidationErrors, FormField, TranslatableField],
   props: ['field', 'resourceId', 'resourceName'],
+
   methods: {
     setInitialValue() {
       // Do nothing
     },
 
     fill(formData) {
-      // Copy current value
-      this.copyValueFromCurrentLocale();
-
       // Add value to FormData
       for (const locale of this.locales) {
-        formData.append(`${this.field.attribute}[${locale.key}]`, this.value[locale.key]);
+        formData.append(
+          `${this.field.attribute}[${locale.key}]`,
+          this.fieldValueMustBeAnObject ? JSON.stringify(this.value[locale.key]) : this.value[locale.key]
+        );
       }
     },
+
+    getComponentField(locale) {
+      return {
+        ...this.field,
+        value: this.value[locale.key] || '',
+        attribute: `${this.field.attribute}.${locale.key}`,
+      }
+    }
   },
   computed: {
     errorAttributes() {
-      const locales = this.locales;
       const errorAttributes = {};
-      for (const locale of locales) {
+      for (const locale of this.locales) {
         errorAttributes[locale.key] = `${this.field.attribute}.${locale.key}`;
       }
       return errorAttributes;
     },
   },
+
+  created() {
+    this.$nextTick(() => {
+      for (const locale of this.locales) {
+        const attributeToWatch = this.fieldValueMustBeAnObject ? 'finalPayload' : 'value'
+
+        this.$watch(
+          `$refs.${locale.key}Component.0.${attributeToWatch}`,
+          (newValue) => {
+            this.value[locale.key] = newValue
+          }
+        );
+      }
+    })
+  }
 };
 </script>
